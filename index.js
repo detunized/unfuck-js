@@ -24,7 +24,12 @@ function collect(root, predicate) {
     controller.replace(root, {
         enter: (node, parent) => {
             if (predicate(node, parent))
-                nodes.push({ node, parent, ref: controller.__current.ref.key });
+                nodes.push({
+                    node,
+                    parent,
+                    container: controller.__current.ref.parent,
+                    key: controller.__current.ref.key
+                });
         }
     });
 
@@ -90,9 +95,32 @@ function addBraces(root) {
     handleLoops();
 }
 
+function expandBooleans(root) {
+    _.forEach(collectType(root, Js.UnaryExpression), x => {
+        let n = x.node;
+
+        if (n.operator === "!") {
+            let a = n.argument;
+            if (a.type === Js.Literal) {
+                if (a.value === 0)
+                    x.container[x.key] = {
+                        type: Js.Literal,
+                        value: true
+                    };
+                else if (a.value === 1) {
+                    x.container[x.key] = {
+                        type: Js.Literal,
+                        value: false
+                    }
+                }
+            }
+        }
+    });
+}
+
 addBraces(ast);
+expandBooleans(ast);
 
 let out = generate(ast);
-
 p(out);
 fs.writeFileSync("out.js", out, "utf-8");

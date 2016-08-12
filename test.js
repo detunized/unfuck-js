@@ -81,6 +81,32 @@ function f() {
         a, b, c;
     while (1);
 
+    //
+    // booleans
+    //
+
+    !0;
+    !1;
+
+    a = !0;
+    b = !1;
+
+    return !0;
+    return !1;
+
+    !0, !1, !2;
+
+    [!0, !1, true, false, 0, 1, 1 + 1, !0 && !1];
+
+    ++i;
+    --i;
+
+    + 0; - 0;
+
+    //
+    // Other
+    //
+
     a, b;
     c, d;
     e, f;
