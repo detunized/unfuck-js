@@ -1,5 +1,7 @@
-let _ = require("lodash");
 let fs = require("fs");
+let assert = require("assert");
+
+let _ = require("lodash");
 let parse = require("espree").parse;
 let esutils = require("esutils");
 let generate = require("escodegen").generate;
@@ -15,6 +17,11 @@ let Ast = esutils.ast;
 
 let src = fs.readFileSync("test.js", "utf-8");
 let ast = parse(src, { ecmaVersion: 6 });
+
+// Array
+function replaceRange(array, index, length, newValues) {
+    return Array.prototype.splice.apply(array, [index, length].concat(newValues));
+}
 
 function collect(root, predicate) {
     let nodes = [];
@@ -36,8 +43,21 @@ function collect(root, predicate) {
     return nodes;
 }
 
-function collectType(root, type) {
-    return collect(root, node => node.type === type);
+function replace(nodeInfo, newNodes) {
+    if (_.isArray(newNodes)) {
+        if (isBlock(nodeInfo.parent)) {
+            assert(_.isArray(nodeInfo.container));
+            replaceRange(nodeInfo.container, nodeInfo.key, 1, newNodes);
+        } else {
+            p("Warning: Can't replace nodes in " + nodeInfo.parent.type);
+        }
+    } else {
+        nodeInfo.container[nodeInfo.key] = newNodes;
+    }
+}
+
+function collectType(root, type, predicate) {
+    return collect(root, node => node.type === type && (!predicate || predicate(node)));
 }
 
 function collectTypes(root, types) {
@@ -103,23 +123,34 @@ function expandBooleans(root) {
             let a = n.argument;
             if (a.type === Js.Literal) {
                 if (a.value === 0)
-                    x.container[x.key] = {
+                    replace(x, {
                         type: Js.Literal,
                         value: true
-                    };
+                    });
                 else if (a.value === 1) {
-                    x.container[x.key] = {
+                    replace(x, {
                         type: Js.Literal,
                         value: false
-                    }
+                    });
                 }
             }
         }
     });
 }
 
+function splitCommas(root) {
+    _.forEach(collectType(root, Js.ExpressionStatement, x => x.expression.type == Js.SequenceExpression), x => {
+        let statements = _.map(x.node.expression.expressions, x => ({
+            type: Js.ExpressionStatement,
+            expression: x
+        }));
+        replace(x, statements);
+    });
+}
+
 addBraces(ast);
 expandBooleans(ast);
+splitCommas(ast);
 
 let out = generate(ast);
 p(out);
