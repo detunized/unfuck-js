@@ -14,7 +14,7 @@ let Js = estraverse.Syntax;
 let Ast = esutils.ast;
 
 let src = fs.readFileSync("test.js", "utf-8");
-let ast = parse(src);
+let ast = parse(src, { ecmaVersion: 6 });
 
 function collect(root, predicate) {
     let nodes = [];
@@ -33,6 +33,10 @@ function collect(root, predicate) {
 
 function collectType(root, type) {
     return collect(root, node => node.type === type);
+}
+
+function collectTypes(root, types) {
+    return collect(root, node => _.indexOf(types, node.type) !== -1);
 }
 
 function isBlock(node) {
@@ -59,6 +63,16 @@ _.forEach(collectType(ast, Js.IfStatement), x => {
     let a = n.alternate;
     if (a && !isBlock(a) && a.type !== Js.IfStatement)
         n.alternate = wrapInBlock(a);
+});
+
+// Add curly braces to for's
+_.forEach(collectTypes(ast, [Js.ForStatement, Js.ForInStatement, Js.ForOfStatement]), x => {
+    let n = x.node;
+
+    // Wrap body
+    let b = n.body;
+    if (!isBlock(b))
+        n.body = wrapInBlock(b);
 });
 
 let out = generate(ast);
