@@ -54,6 +54,33 @@ function f() {
     for (a of b)
         c, d, e;
 
+    //
+    // while
+    //
+
+    while (1) {
+        a,
+        b,
+        c;
+    }
+
+    while (1)
+        a, b, c;
+
+    //
+    // do while
+    //
+
+    do {
+        a,
+        b,
+        c;
+    } while (1);
+
+    do
+        a, b, c;
+    while (1);
+
     a, b;
     c, d;
     e, f;

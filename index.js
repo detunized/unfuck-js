@@ -50,30 +50,47 @@ function wrapInBlock(node) {
     };
 }
 
-// Add curly braces to if/else's
-_.forEach(collectType(ast, Js.IfStatement), x => {
-    let n = x.node;
+function addBraces(root) {
+    function handleIf() {
+        _.forEach(collectType(root, Js.IfStatement), x => {
+            let n = x.node;
 
-    // Wrap if branch
-    let c = n.consequent;
-    if (!isBlock(c))
-        n.consequent = wrapInBlock(c);
+            // Wrap if branch
+            let c = n.consequent;
+            if (!isBlock(c))
+                n.consequent = wrapInBlock(c);
 
-    // Wrap else branch, keep "else if"
-    let a = n.alternate;
-    if (a && !isBlock(a) && a.type !== Js.IfStatement)
-        n.alternate = wrapInBlock(a);
-});
+            // Wrap else branch, keep "else if"
+            let a = n.alternate;
+            if (a && !isBlock(a) && a.type !== Js.IfStatement)
+                n.alternate = wrapInBlock(a);
+        });
+    }
 
-// Add curly braces to for's
-_.forEach(collectTypes(ast, [Js.ForStatement, Js.ForInStatement, Js.ForOfStatement]), x => {
-    let n = x.node;
+    function handleLoops() {
+        let loops = [
+            Js.ForStatement,
+            Js.ForInStatement,
+            Js.ForOfStatement,
+            Js.WhileStatement,
+            Js.DoWhileStatement
+        ];
 
-    // Wrap body
-    let b = n.body;
-    if (!isBlock(b))
-        n.body = wrapInBlock(b);
-});
+        _.forEach(collectTypes(ast, loops), x => {
+            let n = x.node;
+
+            // Wrap body
+            let b = n.body;
+            if (!isBlock(b))
+                n.body = wrapInBlock(b);
+        });
+    }
+
+    handleIf();
+    handleLoops();
+}
+
+addBraces(ast);
 
 let out = generate(ast);
 
