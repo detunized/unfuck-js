@@ -142,25 +142,19 @@ function addBraces(root) {
 }
 
 function expandBooleans(root) {
-    collectType(root, Js.UnaryExpression).forEach(x => {
-        let n = x.node;
+    let nots = collectType(
+        root,
+        Js.UnaryExpression,
+        x => x.operator === "!" && x.argument.type === Js.Literal
+    );
 
-        if (n.operator === "!") {
-            let a = n.argument;
-            if (a.type === Js.Literal) {
-                if (a.value === 0)
-                    replace(x, {
-                        type: Js.Literal,
-                        value: true
-                    });
-                else if (a.value === 1) {
-                    replace(x, {
-                        type: Js.Literal,
-                        value: false
-                    });
-                }
-            }
-        }
+    nots.forEach(x => {
+        let n = x.node;
+        let a = n.argument;
+        if (a.value === 0)
+            replace(x, { type: Js.Literal, value: true });
+        else if (a.value === 1)
+            replace(x, { type: Js.Literal, value: false });
     });
 }
 
