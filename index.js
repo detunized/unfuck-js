@@ -15,6 +15,11 @@ function p(x) {
     return x;
 }
 
+function g(node) {
+    p(generate(node));
+    return node;
+}
+
 let Js = estraverse.Syntax;
 let Ast = esutils.ast;
 
@@ -218,6 +223,9 @@ function splitVarDecls(root) {
 
     let replacements = [];
     vars.forEach(x => {
+        if (!isBlock(x.parent))
+            return;
+
         let n = x.node;
         let statements = n.declarations.map(x => ({
             type: Js.VariableDeclaration,
@@ -238,7 +246,8 @@ function splitVarDecls(root) {
 // main
 //
 
-let src = fs.readFileSync("test.js", "utf-8");
+let filename = process.argv[2] || "test.js";
+let src = fs.readFileSync(filename, "utf-8");
 let ast = parse(src, { ecmaVersion: 6 });
 
 addBraces(ast);
