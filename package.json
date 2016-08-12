@@ -12,5 +12,8 @@
     "type": "git",
     "url": "git://github.com/detunized/unfuck-js"
   },
-  "dependencies": {}
+  "dependencies": {
+    "escodegen": "^1.8.1",
+    "espree": "^3.1.7"
+  }
 }
