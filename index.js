@@ -215,6 +215,31 @@ function splitCommasInReturnsAndThrows(root) {
     applyReplacements(replacements);
 }
 
+function splitVarDecls(root) {
+    let vars = collectType(
+        root,
+        Js.VariableDeclaration,
+        x => x.declarations.length > 1
+    );
+
+    let replacements = [];
+    vars.forEach(x => {
+        let n = x.node;
+        let statements = n.declarations.map(x => ({
+            type: Js.VariableDeclaration,
+            kind: n.kind,
+            declarations: [x]
+        }));
+
+        replacements.push({
+            what: x,
+            with: statements
+        });
+    });
+
+    applyReplacements(replacements);
+}
+
 //
 // main
 //
@@ -226,6 +251,7 @@ addBraces(ast);
 expandBooleans(ast);
 splitCommas(ast);
 splitCommasInReturnsAndThrows(ast);
+splitVarDecls(ast);
 
 let out = generate(ast);
 fs.writeFileSync("out.js", out, "utf-8");

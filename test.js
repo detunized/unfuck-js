@@ -120,6 +120,39 @@ function f() {
     throw a, b, c;
 
     //
+    // var
+    //
+
+    var a;
+    var a, b;
+    var a = 1;
+    var a = 1,
+        b = 2;
+    var a = 1,
+        b = 2,
+        c, d = 3,
+        e = a + b + c;
+
+    let a;
+    let a, b;
+    let a = 1;
+    let a = 1,
+        b = 2;
+    let a = 1,
+        b = 2,
+        c, d = 3,
+        e = a + b + c;
+
+    const a = 1;
+    const a = 1,
+        b = 2;
+    const a = 1,
+        b = 2,
+        c = a + b,
+        d = 3,
+        e = a + b + c;
+
+    //
     // Other
     //
 
