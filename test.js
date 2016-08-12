@@ -5,4 +5,13 @@ function f() {
         c, d;
     else
         e, f;
+
+    if (1) {
+        a;
+    } else
+        b;
+
+    a, b;
+    c, d;
+    e, f;
 }
