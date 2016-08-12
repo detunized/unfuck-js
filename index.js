@@ -226,6 +226,8 @@ function splitVarDecls(root) {
         if (!isBlock(x.parent))
             return;
 
+        // TODO: Handle `var a = 1, a = 2;` properly
+
         let n = x.node;
         let statements = n.declarations.map(x => ({
             type: Js.VariableDeclaration,
