@@ -12,7 +12,5 @@
     "type": "git",
     "url": "git://github.com/detunized/unfuck-js"
   },
-  "dependencies": {
-    "esprima": "^2.7.2"
-  }
+  "dependencies": {}
 }
