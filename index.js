@@ -56,6 +56,32 @@ function replace(nodeInfo, newNodes) {
     }
 }
 
+function applyReplacements(replacements) {
+    let byContainer = new Map();
+    replacements.forEach(x => {
+        let c = x.what.container;
+        if (byContainer.has(c))
+            byContainer.get(c).push(x);
+        else
+            byContainer.set(c, [x]);
+    });
+
+    byContainer.forEach((r, c) => {
+        if (_.isArray(c)) {
+            r = _.sortBy(r, x => x.what.key);
+
+            let offset = 0;
+            for (let i of r) {
+                replaceRange(c, i.what.key + offset, 1, i.with);
+                offset += i.with.length - 1;
+            }
+        } else {
+            assert(!_.isArray(r.with));
+            c[r.what.key] = r.with;
+        }
+    });
+}
+
 function collectType(root, type, predicate) {
     return collect(root, node => node.type === type && (!predicate || predicate(node)));
 }
@@ -77,7 +103,7 @@ function wrapInBlock(node) {
 
 function addBraces(root) {
     function handleIf() {
-        _.forEach(collectType(root, Js.IfStatement), x => {
+        collectType(root, Js.IfStatement).forEach(x => {
             let n = x.node;
 
             // Wrap if branch
@@ -101,7 +127,7 @@ function addBraces(root) {
             Js.DoWhileStatement
         ];
 
-        _.forEach(collectTypes(ast, loops), x => {
+        collectTypes(ast, loops).forEach(x => {
             let n = x.node;
 
             // Wrap body
@@ -116,7 +142,7 @@ function addBraces(root) {
 }
 
 function expandBooleans(root) {
-    _.forEach(collectType(root, Js.UnaryExpression), x => {
+    collectType(root, Js.UnaryExpression).forEach(x => {
         let n = x.node;
 
         if (n.operator === "!") {
@@ -139,13 +165,55 @@ function expandBooleans(root) {
 }
 
 function splitCommas(root) {
-    _.forEach(collectType(root, Js.ExpressionStatement, x => x.expression.type == Js.SequenceExpression), x => {
-        let statements = _.map(x.node.expression.expressions, x => ({
+    let commas = collectType(
+        root,
+        Js.ExpressionStatement,
+        x => x.expression.type == Js.SequenceExpression
+    );
+
+    let replacements = [];
+    commas.forEach(x => {
+        let statements = x.node.expression.expressions.map(x => ({
             type: Js.ExpressionStatement,
             expression: x
         }));
-        replace(x, statements);
+
+        replacements.push({
+            what: x,
+            with: statements
+        });
     });
+
+    applyReplacements(replacements);
+}
+
+function splitCommasInReturns(root) {
+    let returns = collectType(
+        root,
+        Js.ReturnStatement,
+        x => x.argument && x.argument.type === Js.SequenceExpression
+    );
+
+    let replacements = [];
+    returns.forEach(x => {
+        let statements = x.node.argument.expressions.map(x => ({
+            type: Js.ExpressionStatement,
+            expression: x
+        }));
+
+        let last = statements.pop();
+        statements.push({
+            type: Js.ReturnStatement,
+            argument: last.expression
+        });
+
+        replacements.push({
+            what: x,
+            with: statements
+        });
+    });
+
+    applyReplacements(replacements);
 }
 
 //
@@ -158,6 +226,7 @@ let ast = parse(src, { ecmaVersion: 6 });
 addBraces(ast);
 expandBooleans(ast);
 splitCommas(ast);
+splitCommasInReturns(ast);
 
-let out = p(generate(ast));
+let out = generate(ast);
 fs.writeFileSync("out.js", out, "utf-8");

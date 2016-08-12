@@ -104,6 +104,14 @@ function f() {
     + 0; - 0;
 
     //
+    // return
+    //
+
+    return a;
+    return a, (b, c);
+    return a, b, c;
+
+    //
     // Other
     //
 
