@@ -18,9 +18,6 @@ function p(x) {
 let Js = estraverse.Syntax;
 let Ast = esutils.ast;
 
-let src = fs.readFileSync("test.js", "utf-8");
-let ast = parse(src, { ecmaVersion: 6 });
-
 // Array
 function replaceRange(array, index, length, newValues) {
     return Array.prototype.splice.apply(array, [index, length].concat(newValues));
@@ -151,10 +148,16 @@ function splitCommas(root) {
     });
 }
 
+//
+// main
+//
+
+let src = fs.readFileSync("test.js", "utf-8");
+let ast = parse(src, { ecmaVersion: 6 });
+
 addBraces(ast);
 expandBooleans(ast);
 splitCommas(ast);
 
-let out = generate(ast);
-p(out);
+let out = p(generate(ast));
 fs.writeFileSync("out.js", out, "utf-8");
