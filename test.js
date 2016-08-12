@@ -112,6 +112,14 @@ function f() {
     return a, b, c;
 
     //
+    // return
+    //
+
+    throw a;
+    throw a, (b, c);
+    throw a, b, c;
+
+    //
     // Other
     //
 

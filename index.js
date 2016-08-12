@@ -86,8 +86,8 @@ function collectType(root, type, predicate) {
     return collect(root, node => node.type === type && (!predicate || predicate(node)));
 }
 
-function collectTypes(root, types) {
-    return collect(root, node => _.indexOf(types, node.type) !== -1);
+function collectTypes(root, types, predicate) {
+    return collect(root, node => _.indexOf(types, node.type) !== -1 && (!predicate || predicate(node)));
 }
 
 function isBlock(node) {
@@ -187,10 +187,9 @@ function splitCommas(root) {
     applyReplacements(replacements);
 }
 
-function splitCommasInReturns(root) {
-    let returns = collectType(
-        root,
-        Js.ReturnStatement,
+function splitCommasInReturnsAndThrows(root) {
+    let returns = collectTypes(
+        root, [Js.ReturnStatement, Js.ThrowStatement],
         x => x.argument && x.argument.type === Js.SequenceExpression
     );
 
@@ -203,7 +202,7 @@ function splitCommasInReturns(root) {
 
         let last = statements.pop();
         statements.push({
-            type: Js.ReturnStatement,
+            type: x.node.type,
             argument: last.expression
         });
 
@@ -226,7 +225,7 @@ let ast = parse(src, { ecmaVersion: 6 });
 addBraces(ast);
 expandBooleans(ast);
 splitCommas(ast);
-splitCommasInReturns(ast);
+splitCommasInReturnsAndThrows(ast);
 
 let out = generate(ast);
 fs.writeFileSync("out.js", out, "utf-8");
