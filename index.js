@@ -183,6 +183,16 @@ function expandBooleans(root) {
     })
 }
 
+function expandVoid0(root) {
+    let nots = collectType(
+        root,
+        Js.UnaryExpression,
+        x => x.operator === "void" && x.argument.type === Js.Literal && x.argument.value === 0
+    )
+
+    nots.forEach(x => replace(x, { type: Js.Identifier, name: "undefined" }))
+}
+
 function splitCommas(root) {
     let commas = collectExpressionStatement(root, Js.SequenceExpression)
     let replacements = []
@@ -360,6 +370,7 @@ let ast = load(filename)
 
 addBraces(ast)
 expandBooleans(ast)
+expandVoid0(ast)
 splitCommas(ast)
 splitCommasInReturnsAndThrows(ast)
 splitVarDecls(ast)

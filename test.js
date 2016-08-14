@@ -106,6 +106,14 @@ function f() {
     + 0; - 0;
 
     //
+    // void 0
+    //
+
+    void 0;
+    if (void 0 === a)
+        b;
+
+    //
     // return
     //
 
