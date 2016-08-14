@@ -121,6 +121,10 @@ function wrapInStatement(node) {
     };
 }
 
+function wrapInStatementAndBlock(node) {
+    return wrapInBlock(wrapInStatement(node));
+}
+
 function addBraces(root) {
     function handleIf() {
         collectType(root, Js.IfStatement).forEach(x => {
@@ -262,7 +266,7 @@ function convertAndToIf(root) {
         replace(x, {
             type: Js.IfStatement,
             test: e.left,
-            consequent: wrapInBlock(wrapInStatement(e.right))
+            consequent: wrapInStatementAndBlock(e.right)
         });
     });
 }
@@ -284,7 +288,7 @@ function convertOrToIfNot(root) {
                 prefix: true,
                 argument: e.left
             },
-            consequent: wrapInBlock(wrapInStatement(e.right))
+            consequent: wrapInStatementAndBlock(e.right)
         });
     });
 }
@@ -296,8 +300,8 @@ function convertTernaryToIfElse(root) {
         replace(x, {
             type: Js.IfStatement,
             test: e.test,
-            consequent: wrapInBlock(wrapInStatement(e.consequent)),
-            alternate: wrapInBlock(wrapInStatement(e.alternate))
+            consequent: wrapInStatementAndBlock(e.consequent),
+            alternate: wrapInStatementAndBlock(e.alternate)
         });
     });
 }
