@@ -95,6 +95,14 @@ function collectTypes(root, types, predicate) {
     return collect(root, node => _.indexOf(types, node.type) !== -1 && (!predicate || predicate(node)));
 }
 
+function collectExpressionStatement(root, expressionType, predicate) {
+    return collectType(
+        root,
+        Js.ExpressionStatement,
+        node => node.expression.type === expressionType && (!predicate || predicate(node.expression))
+    );
+}
+
 function isBlock(node) {
     return node.type === Js.BlockStatement;
 }
@@ -164,12 +172,7 @@ function expandBooleans(root) {
 }
 
 function splitCommas(root) {
-    let commas = collectType(
-        root,
-        Js.ExpressionStatement,
-        x => x.expression.type == Js.SequenceExpression
-    );
-
+    let commas = collectExpressionStatement(root, Js.SequenceExpression);
     let replacements = [];
     commas.forEach(x => {
         let statements = x.node.expression.expressions.map(x => ({
