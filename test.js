@@ -225,6 +225,14 @@ function f() {
 
     a ? b : c;
     e = a ? b : c;
+
+    //
+    // return a ? b : c;
+    //
+
+    return;
+    return a;
+    return a ? b : c;
 }
 
 // Problems

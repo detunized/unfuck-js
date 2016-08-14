@@ -256,7 +256,7 @@ function convertAndToIf(root) {
     let ands = collectExpressionStatement(
         root,
         Js.LogicalExpression,
-        x => x.operator == "&&"
+        x => x.operator === "&&"
     );
 
     ands.forEach(x => {
@@ -275,7 +275,7 @@ function convertOrToIfNot(root) {
     let ands = collectExpressionStatement(
         root,
         Js.LogicalExpression,
-        x => x.operator == "||"
+        x => x.operator === "||"
     );
 
     ands.forEach(x => {
@@ -304,6 +304,30 @@ function convertTernaryToIfElse(root) {
             alternate: wrapInStatementAndBlock(e.alternate)
         });
     });
+}
+
+function convertReturnTernaryToIfElse(root) {
+    let returns = collectType(
+        root,
+        Js.ReturnStatement,
+        x => x.argument && x.argument.type === Js.ConditionalExpression
+    )
+
+    returns.forEach(x => {
+        let e = x.node.argument
+        replace(x, {
+            type: Js.IfStatement,
+            test: e.test,
+            consequent: {
+                type: Js.ReturnStatement,
+                argument: e.consequent
+            },
+            alternate: {
+                type: Js.ReturnStatement,
+                argument: e.alternate
+            }
+        })
+    })
 }
 
 function load(filename, ecmaVersion = 5) {
@@ -341,6 +365,7 @@ splitVarDecls(ast);
 convertAndToIf(ast);
 convertOrToIfNot(ast);
 convertTernaryToIfElse(ast);
+convertReturnTernaryToIfElse(ast);
 
 let out = generate(ast);
 fs.writeFileSync("out.js", out, "utf-8");
