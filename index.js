@@ -5,7 +5,7 @@ let fs = require("fs");
 let assert = require("assert");
 
 let _ = require("lodash");
-let parse = require("espree").parse;
+let espree = require("espree");
 let esutils = require("esutils");
 let generate = require("escodegen").generate;
 let estraverse = require("estraverse");
@@ -244,13 +244,32 @@ function splitVarDecls(root) {
     applyReplacements(replacements);
 }
 
+function load(filename, ecmaVersion = 5) {
+    try {
+        var src = fs.readFileSync(filename, "utf-8");
+        return espree.parse(src, { ecmaVersion });
+    } catch (e) {
+        if (e.name === 'SyntaxError') {
+            p(`${filename}:${e.lineNumber}:${e.column}`);
+            p(`${e.name}: ${e.message}`);
+
+            let line = src.split("\n")[e.lineNumber - 1];
+            p(line);
+            p(_.repeat(" ", e.column - 1) + "^");
+        } else {
+            p(e);
+        }
+
+        process.exit();
+    }
+}
+
 //
 // main
 //
 
 let filename = process.argv[2] || "test.js";
-let src = fs.readFileSync(filename, "utf-8");
-let ast = parse(src, { ecmaVersion: 6 });
+let ast = load(filename, 5);
 
 addBraces(ast);
 expandBooleans(ast);
