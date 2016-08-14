@@ -41,6 +41,7 @@ function f() {
     for (a in b)
         c, d, e;
 
+    /* ES6
     //
     // for of
     //
@@ -53,6 +54,7 @@ function f() {
 
     for (a of b)
         c, d, e;
+    */
 
     //
     // while
@@ -133,6 +135,7 @@ function f() {
         c, d = 3,
         e = a + b + c;
 
+    /* ES6
     let a;
     let a, b;
     let a = 1;
@@ -151,6 +154,7 @@ function f() {
         c = a + b,
         d = 3,
         e = a + b + c;
+    */
 
     //
     // commas
