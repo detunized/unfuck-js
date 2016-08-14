@@ -153,10 +153,11 @@ function f() {
         e = a + b + c;
 
     //
-    // Other
+    // commas
     //
 
     a, b;
     c, d;
-    e, f;
+    e, f, g;
+    e, (f, g), h = 1, d, (i = j, a = k);
 }
