@@ -226,3 +226,6 @@ function f() {
     a ? b : c;
     e = a ? b : c;
 }
+
+// Problems
+void 0 === f && (f = 64);
