@@ -114,6 +114,13 @@ function wrapInBlock(node) {
     };
 }
 
+function wrapInStatement(node) {
+    return {
+        type: Js.ExpressionStatement,
+        expression: node
+    };
+}
+
 function addBraces(root) {
     function handleIf() {
         collectType(root, Js.IfStatement).forEach(x => {
@@ -277,9 +284,7 @@ function convertOrToIfNot(root) {
     );
 
     ands.forEach(x => {
-        let n = x.node;
-        let e = n.expression;
-
+        let e = x.node.expression;
         replace(x, {
             type: Js.IfStatement,
             test: {
@@ -292,6 +297,19 @@ function convertOrToIfNot(root) {
                 type: Js.ExpressionStatement,
                 expression: e.right
             })
+        });
+    });
+}
+
+function convertTernaryToIfElse(root) {
+    let ternaries = collectExpressionStatement(root, Js.ConditionalExpression);
+    ternaries.forEach(x => {
+        let e = x.node.expression;
+        replace(x, {
+            type: Js.IfStatement,
+            test: e.test,
+            consequent: wrapInBlock(wrapInStatement(e.consequent)),
+            alternate: wrapInBlock(wrapInStatement(e.alternate))
         });
     });
 }
@@ -330,6 +348,7 @@ splitCommasInReturnsAndThrows(ast);
 splitVarDecls(ast);
 convertAndToIf(ast);
 convertOrToIfNot(ast);
+convertTernaryToIfElse(ast);
 
 let out = generate(ast);
 fs.writeFileSync("out.js", out, "utf-8");
