@@ -164,4 +164,30 @@ function f() {
     c, d;
     e, f, g;
     e, (f, g), h = 1, d, (i = j, a = k);
+
+    //
+    // and -> if
+    //
+
+    a && b;
+    a && b && c;
+
+    switch (a) {
+        case 1:
+            b && c;
+            d && e;
+            break;
+        case 2:
+            a;
+            b && c && d;
+            d;
+            break;
+    }
+
+    if (a && b) {}
+    for (a && b; b && c; d && e) {}
+
+    /* ES6
+    x => a && b;
+    */
 }

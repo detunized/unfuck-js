@@ -247,6 +247,28 @@ function splitVarDecls(root) {
     applyReplacements(replacements);
 }
 
+function convertAndToIf(root) {
+    let ands = collectExpressionStatement(
+        root,
+        Js.LogicalExpression,
+        x => x.operator == "&&"
+    );
+
+    ands.forEach(x => {
+        let n = x.node;
+        let e = n.expression;
+
+        replace(x, {
+            type: Js.IfStatement,
+            test: e.left,
+            consequent: wrapInBlock({
+                type: Js.ExpressionStatement,
+                expression: e.right
+            })
+        });
+    });
+}
+
 function load(filename, ecmaVersion = 5) {
     try {
         var src = fs.readFileSync(filename, "utf-8");
@@ -272,13 +294,14 @@ function load(filename, ecmaVersion = 5) {
 //
 
 let filename = process.argv[2] || "test.js";
-let ast = load(filename, 5);
+let ast = load(filename);
 
 addBraces(ast);
 expandBooleans(ast);
 splitCommas(ast);
 splitCommasInReturnsAndThrows(ast);
 splitVarDecls(ast);
+convertAndToIf(ast);
 
 let out = generate(ast);
 fs.writeFileSync("out.js", out, "utf-8");
