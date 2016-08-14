@@ -182,14 +182,10 @@ function splitCommas(root) {
     let commas = collectExpressionStatement(root, Js.SequenceExpression);
     let replacements = [];
     commas.forEach(x => {
-        let statements = x.node.expression.expressions.map(x => ({
-            type: Js.ExpressionStatement,
-            expression: x
-        }));
-
+        let e = x.node.expression;
         replacements.push({
             what: x,
-            with: statements
+            with: e.expressions.map(wrapInStatement)
         });
     });
 
@@ -204,10 +200,8 @@ function splitCommasInReturnsAndThrows(root) {
 
     let replacements = [];
     returns.forEach(x => {
-        let statements = x.node.argument.expressions.map(x => ({
-            type: Js.ExpressionStatement,
-            expression: x
-        }));
+        let a = x.node.argument;
+        let statements = a.expressions.map(wrapInStatement);
 
         let last = statements.pop();
         statements.push({
@@ -268,10 +262,7 @@ function convertAndToIf(root) {
         replace(x, {
             type: Js.IfStatement,
             test: e.left,
-            consequent: wrapInBlock({
-                type: Js.ExpressionStatement,
-                expression: e.right
-            })
+            consequent: wrapInBlock(wrapInStatement(e.right))
         });
     });
 }
@@ -293,10 +284,7 @@ function convertOrToIfNot(root) {
                 prefix: true,
                 argument: e.left
             },
-            consequent: wrapInBlock({
-                type: Js.ExpressionStatement,
-                expression: e.right
-            })
+            consequent: wrapInBlock(wrapInStatement(e.right))
         });
     });
 }
