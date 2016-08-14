@@ -187,6 +187,10 @@ function f() {
     if (a && b) {}
     for (a && b; b && c; d && e) {}
 
+    /* ES6
+    x => a && b;
+    */
+
     //
     // || -> if
     //
@@ -212,6 +216,6 @@ function f() {
     for (a || b; b || c; d || e) {}
 
     /* ES6
-    x => a && b;
+    x => a || b;
     */
 }
