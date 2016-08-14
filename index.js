@@ -269,6 +269,33 @@ function convertAndToIf(root) {
     });
 }
 
+function convertOrToIfNot(root) {
+    let ands = collectExpressionStatement(
+        root,
+        Js.LogicalExpression,
+        x => x.operator == "||"
+    );
+
+    ands.forEach(x => {
+        let n = x.node;
+        let e = n.expression;
+
+        replace(x, {
+            type: Js.IfStatement,
+            test: {
+                type: Js.UnaryExpression,
+                operator: "!",
+                prefix: true,
+                argument: e.left
+            },
+            consequent: wrapInBlock({
+                type: Js.ExpressionStatement,
+                expression: e.right
+            })
+        });
+    });
+}
+
 function load(filename, ecmaVersion = 5) {
     try {
         var src = fs.readFileSync(filename, "utf-8");
@@ -302,6 +329,7 @@ splitCommas(ast);
 splitCommasInReturnsAndThrows(ast);
 splitVarDecls(ast);
 convertAndToIf(ast);
+convertOrToIfNot(ast);
 
 let out = generate(ast);
 fs.writeFileSync("out.js", out, "utf-8");
