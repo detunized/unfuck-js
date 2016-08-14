@@ -1,36 +1,36 @@
 // Copyright (C) 2016 Dmitry Yakimenko (detunized@gmail.com).
 // Licensed under the terms of the MIT license. See LICENCE for details.
 
-let fs = require("fs");
-let assert = require("assert");
+let fs = require("fs")
+let assert = require("assert")
 
-let _ = require("lodash");
-let espree = require("espree");
-let esutils = require("esutils");
-let generate = require("escodegen").generate;
-let estraverse = require("estraverse");
+let _ = require("lodash")
+let espree = require("espree")
+let esutils = require("esutils")
+let generate = require("escodegen").generate
+let estraverse = require("estraverse")
 
 function p(x) {
-    console.log(x);
-    return x;
+    console.log(x)
+    return x
 }
 
 function g(node) {
-    p(generate(node));
-    return node;
+    p(generate(node))
+    return node
 }
 
-let Js = estraverse.Syntax;
-let Ast = esutils.ast;
+let Js = estraverse.Syntax
+let Ast = esutils.ast
 
 // Array
 function replaceRange(array, index, length, newValues) {
-    return Array.prototype.splice.apply(array, [index, length].concat(newValues));
+    return Array.prototype.splice.apply(array, [index, length].concat(newValues))
 }
 
 function collect(root, predicate) {
-    let nodes = [];
-    let controller = new estraverse.Controller();
+    let nodes = []
+    let controller = new estraverse.Controller()
 
     // Using replace since traverse doesn't populate `ref`
     controller.replace(root, {
@@ -41,58 +41,59 @@ function collect(root, predicate) {
                     parent,
                     container: controller.__current.ref.parent,
                     key: controller.__current.ref.key
-                });
+                })
         }
-    });
+    })
 
-    return nodes;
+    return nodes
 }
 
 function replace(nodeInfo, newNodes) {
     if (_.isArray(newNodes)) {
         if (isBlock(nodeInfo.parent)) {
-            assert(_.isArray(nodeInfo.container));
-            replaceRange(nodeInfo.container, nodeInfo.key, 1, newNodes);
+            assert(_.isArray(nodeInfo.container))
+            replaceRange(nodeInfo.container, nodeInfo.key, 1, newNodes)
         } else {
-            p("Warning: Can't replace nodes in " + nodeInfo.parent.type);
+            p("Warning: Can't replace nodes in " + nodeInfo.parent.type)
         }
     } else {
-        nodeInfo.container[nodeInfo.key] = newNodes;
+        nodeInfo.container[nodeInfo.key] = newNodes
     }
 }
 
 function applyReplacements(replacements) {
-    let byContainer = new Map();
+    let byContainer = new Map()
     replacements.forEach(x => {
-        let c = x.what.container;
+        let c = x.what.container
         if (byContainer.has(c))
-            byContainer.get(c).push(x);
+            byContainer.get(c).push(x)
         else
-            byContainer.set(c, [x]);
-    });
+            byContainer.set(c, [x])
+    })
 
     byContainer.forEach((r, c) => {
         if (_.isArray(c)) {
-            r = _.sortBy(r, x => x.what.key);
+            r = _.sortBy(r, x => x.what.key)
 
-            let offset = 0;
+            let offset = 0
             for (let i of r) {
-                replaceRange(c, i.what.key + offset, 1, i.with);
-                offset += i.with.length - 1;
+                replaceRange(c, i.what.key + offset, 1, i.with)
+                offset += i.with.length - 1
             }
         } else {
-            assert(!_.isArray(r.with));
-            c[r.what.key] = r.with;
+            assert(!_.isArray(r.with))
+            c[r.what.key] = r.with
         }
-    });
+    })
 }
 
 function collectType(root, type, predicate) {
-    return collect(root, node => node.type === type && (!predicate || predicate(node)));
+    return collect(root, node => node.type === type && (!predicate || predicate(node)))
+
 }
 
 function collectTypes(root, types, predicate) {
-    return collect(root, node => _.indexOf(types, node.type) !== -1 && (!predicate || predicate(node)));
+    return collect(root, node => _.indexOf(types, node.type) !== -1 && (!predicate || predicate(node)))
 }
 
 function collectExpressionStatement(root, expressionType, predicate) {
@@ -100,46 +101,46 @@ function collectExpressionStatement(root, expressionType, predicate) {
         root,
         Js.ExpressionStatement,
         node => node.expression.type === expressionType && (!predicate || predicate(node.expression))
-    );
+    )
 }
 
 function isBlock(node) {
-    return node.type === Js.BlockStatement;
+    return node.type === Js.BlockStatement
 }
 
 function wrapInBlock(node) {
     return {
         type: Js.BlockStatement,
         body: [node]
-    };
+    }
 }
 
 function wrapInStatement(node) {
     return {
         type: Js.ExpressionStatement,
         expression: node
-    };
+    }
 }
 
 function wrapInStatementAndBlock(node) {
-    return wrapInBlock(wrapInStatement(node));
+    return wrapInBlock(wrapInStatement(node))
 }
 
 function addBraces(root) {
     function handleIf() {
         collectType(root, Js.IfStatement).forEach(x => {
-            let n = x.node;
+            let n = x.node
 
             // Wrap if branch
-            let c = n.consequent;
+            let c = n.consequent
             if (!isBlock(c))
-                n.consequent = wrapInBlock(c);
+                n.consequent = wrapInBlock(c)
 
             // Wrap else branch, keep "else if"
-            let a = n.alternate;
+            let a = n.alternate
             if (a && !isBlock(a) && a.type !== Js.IfStatement)
-                n.alternate = wrapInBlock(a);
-        });
+                n.alternate = wrapInBlock(a)
+        })
     }
 
     function handleLoops() {
@@ -149,20 +150,20 @@ function addBraces(root) {
             Js.ForOfStatement,
             Js.WhileStatement,
             Js.DoWhileStatement
-        ];
+        ]
 
         collectTypes(ast, loops).forEach(x => {
-            let n = x.node;
+            let n = x.node
 
             // Wrap body
-            let b = n.body;
+            let b = n.body
             if (!isBlock(b))
-                n.body = wrapInBlock(b);
-        });
+                n.body = wrapInBlock(b)
+        })
     }
 
-    handleIf();
-    handleLoops();
+    handleIf()
+    handleLoops()
 }
 
 function expandBooleans(root) {
@@ -170,56 +171,56 @@ function expandBooleans(root) {
         root,
         Js.UnaryExpression,
         x => x.operator === "!" && x.argument.type === Js.Literal
-    );
+    )
 
     nots.forEach(x => {
-        let n = x.node;
-        let a = n.argument;
+        let n = x.node
+        let a = n.argument
         if (a.value === 0)
-            replace(x, { type: Js.Literal, value: true });
+            replace(x, { type: Js.Literal, value: true })
         else if (a.value === 1)
-            replace(x, { type: Js.Literal, value: false });
-    });
+            replace(x, { type: Js.Literal, value: false })
+    })
 }
 
 function splitCommas(root) {
-    let commas = collectExpressionStatement(root, Js.SequenceExpression);
-    let replacements = [];
+    let commas = collectExpressionStatement(root, Js.SequenceExpression)
+    let replacements = []
     commas.forEach(x => {
-        let e = x.node.expression;
+        let e = x.node.expression
         replacements.push({
             what: x,
             with: e.expressions.map(wrapInStatement)
-        });
-    });
+        })
+    })
 
-    applyReplacements(replacements);
+    applyReplacements(replacements)
 }
 
 function splitCommasInReturnsAndThrows(root) {
     let returns = collectTypes(
         root, [Js.ReturnStatement, Js.ThrowStatement],
         x => x.argument && x.argument.type === Js.SequenceExpression
-    );
+    )
 
-    let replacements = [];
+    let replacements = []
     returns.forEach(x => {
-        let a = x.node.argument;
-        let statements = a.expressions.map(wrapInStatement);
+        let a = x.node.argument
+        let statements = a.expressions.map(wrapInStatement)
 
-        let last = statements.pop();
+        let last = statements.pop()
         statements.push({
             type: x.node.type,
             argument: last.expression
-        });
+        })
 
         replacements.push({
             what: x,
             with: statements
-        });
-    });
+        })
+    })
 
-    applyReplacements(replacements);
+    applyReplacements(replacements)
 }
 
 function splitVarDecls(root) {
@@ -227,29 +228,29 @@ function splitVarDecls(root) {
         root,
         Js.VariableDeclaration,
         x => x.declarations.length > 1
-    );
+    )
 
-    let replacements = [];
+    let replacements = []
     vars.forEach(x => {
         if (!isBlock(x.parent))
-            return;
+            return
 
-        // TODO: Handle `var a = 1, a = 2;` properly
+        // TODO: Handle `var a = 1, a = 2` properly
 
-        let n = x.node;
+        let n = x.node
         let statements = n.declarations.map(x => ({
             type: Js.VariableDeclaration,
             kind: n.kind,
             declarations: [x]
-        }));
+        }))
 
         replacements.push({
             what: x,
             with: statements
-        });
-    });
+        })
+    })
 
-    applyReplacements(replacements);
+    applyReplacements(replacements)
 }
 
 function convertAndToIf(root) {
@@ -257,18 +258,18 @@ function convertAndToIf(root) {
         root,
         Js.LogicalExpression,
         x => x.operator === "&&"
-    );
+    )
 
     ands.forEach(x => {
-        let n = x.node;
-        let e = n.expression;
+        let n = x.node
+        let e = n.expression
 
         replace(x, {
             type: Js.IfStatement,
             test: e.left,
             consequent: wrapInStatementAndBlock(e.right)
-        });
-    });
+        })
+    })
 }
 
 function convertOrToIfNot(root) {
@@ -276,10 +277,10 @@ function convertOrToIfNot(root) {
         root,
         Js.LogicalExpression,
         x => x.operator === "||"
-    );
+    )
 
     ands.forEach(x => {
-        let e = x.node.expression;
+        let e = x.node.expression
         replace(x, {
             type: Js.IfStatement,
             test: {
@@ -289,21 +290,21 @@ function convertOrToIfNot(root) {
                 argument: e.left
             },
             consequent: wrapInStatementAndBlock(e.right)
-        });
-    });
+        })
+    })
 }
 
 function convertTernaryToIfElse(root) {
-    let ternaries = collectExpressionStatement(root, Js.ConditionalExpression);
+    let ternaries = collectExpressionStatement(root, Js.ConditionalExpression)
     ternaries.forEach(x => {
-        let e = x.node.expression;
+        let e = x.node.expression
         replace(x, {
             type: Js.IfStatement,
             test: e.test,
             consequent: wrapInStatementAndBlock(e.consequent),
             alternate: wrapInStatementAndBlock(e.alternate)
-        });
-    });
+        })
+    })
 }
 
 function convertReturnTernaryToIfElse(root) {
@@ -332,21 +333,21 @@ function convertReturnTernaryToIfElse(root) {
 
 function load(filename, ecmaVersion = 5) {
     try {
-        var src = fs.readFileSync(filename, "utf-8");
-        return espree.parse(src, { ecmaVersion });
+        var src = fs.readFileSync(filename, "utf-8")
+        return espree.parse(src, { ecmaVersion })
     } catch (e) {
         if (e.name === 'SyntaxError') {
-            p(`${filename}:${e.lineNumber}:${e.column}`);
-            p(`${e.name}: ${e.message}`);
+            p(`${filename}:${e.lineNumber}:${e.column}`)
+            p(`${e.name}: ${e.message}`)
 
-            let line = src.split("\n")[e.lineNumber - 1];
-            p(line);
-            p(_.repeat(" ", e.column - 1) + "^");
+            let line = src.split("\n")[e.lineNumber - 1]
+            p(line)
+            p(_.repeat(" ", e.column - 1) + "^")
         } else {
-            p(e);
+            p(e)
         }
 
-        process.exit();
+        process.exit()
     }
 }
 
@@ -354,18 +355,18 @@ function load(filename, ecmaVersion = 5) {
 // main
 //
 
-let filename = process.argv[2] || "test.js";
-let ast = load(filename);
+let filename = process.argv[2] || "test.js"
+let ast = load(filename)
 
-addBraces(ast);
-expandBooleans(ast);
-splitCommas(ast);
-splitCommasInReturnsAndThrows(ast);
-splitVarDecls(ast);
-convertAndToIf(ast);
-convertOrToIfNot(ast);
-convertTernaryToIfElse(ast);
-convertReturnTernaryToIfElse(ast);
+addBraces(ast)
+expandBooleans(ast)
+splitCommas(ast)
+splitCommasInReturnsAndThrows(ast)
+splitVarDecls(ast)
+convertAndToIf(ast)
+convertOrToIfNot(ast)
+convertTernaryToIfElse(ast)
+convertReturnTernaryToIfElse(ast)
 
-let out = generate(ast);
-fs.writeFileSync("out.js", out, "utf-8");
+let out = generate(ast)
+fs.writeFileSync("out.js", out, "utf-8")
